@@ -1,3 +1,6 @@
+[![GoDoc](https://godoc.org/github.com/golang/gddo?status.svg)](https://godoc.org/github.com/LdDl/viterbi)
+[![Build Status](https://travis-ci.com/LdDl/viterbi.svg?branch=master)](https://travis-ci.com/LdDl/viterbi)
+
 # viterbi
 
 ## Table of Contents
