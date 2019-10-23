@@ -2,7 +2,6 @@ package viterbi
 
 import (
 	"fmt"
-	"log"
 	"testing"
 )
 
@@ -26,7 +25,7 @@ func (obs CustomObservation) ID() int {
 
 func TestViterbiEvalPath(t *testing.T) {
 	var (
-		incomingStates = []CustomState{
+		incStates = []CustomState{
 			CustomState{Name: "Healty", id: 1},
 			CustomState{Name: "Fever", id: 2},
 		}
@@ -37,27 +36,27 @@ func TestViterbiEvalPath(t *testing.T) {
 		}
 	)
 	var v Viterbi
-	for i := range incomingStates {
-		v.AddState(incomingStates[i])
+	for i := range incStates {
+		v.AddState(incStates[i])
 	}
 	for i := range incomingObservations {
 		v.AddObservation(incomingObservations[i])
 	}
 
-	v.PutStartProbability(incomingStates[0], 0.6)
-	v.PutStartProbability(incomingStates[1], 0.4)
+	v.PutStartProbability(incStates[0], 0.6)
+	v.PutStartProbability(incStates[1], 0.4)
 
-	v.PutEmissionProbability(incomingStates[0], incomingObservations[0], 0.5)
-	v.PutEmissionProbability(incomingStates[0], incomingObservations[1], 0.4)
-	v.PutEmissionProbability(incomingStates[0], incomingObservations[2], 0.1)
-	v.PutEmissionProbability(incomingStates[1], incomingObservations[0], 0.1)
-	v.PutEmissionProbability(incomingStates[1], incomingObservations[1], 0.3)
-	v.PutEmissionProbability(incomingStates[1], incomingObservations[2], 0.6)
+	v.PutEmissionProbability(incStates[0], incomingObservations[0], 0.5)
+	v.PutEmissionProbability(incStates[0], incomingObservations[1], 0.4)
+	v.PutEmissionProbability(incStates[0], incomingObservations[2], 0.1)
+	v.PutEmissionProbability(incStates[1], incomingObservations[0], 0.1)
+	v.PutEmissionProbability(incStates[1], incomingObservations[1], 0.3)
+	v.PutEmissionProbability(incStates[1], incomingObservations[2], 0.6)
 
-	v.PutTransitionProbability(incomingStates[0], incomingStates[0], 0.7)
-	v.PutTransitionProbability(incomingStates[0], incomingStates[1], 0.3)
-	v.PutTransitionProbability(incomingStates[1], incomingStates[0], 0.4)
-	v.PutTransitionProbability(incomingStates[1], incomingStates[1], 0.6)
+	v.PutTransitionProbability(incStates[0], incStates[0], 0.7)
+	v.PutTransitionProbability(incStates[0], incStates[1], 0.3)
+	v.PutTransitionProbability(incStates[1], incStates[0], 0.4)
+	v.PutTransitionProbability(incStates[1], incStates[1], 0.6)
 
 	vpath := v.EvalPath()
 
@@ -71,17 +70,17 @@ func TestViterbiEvalPath(t *testing.T) {
 			"Probability has to be 0.01512, but got", vpath.Probability,
 		)
 	}
-	if vpath.Path[0] != incomingStates[0] {
+	if vpath.Path[0] != incStates[0] {
 		t.Error(
 			"First most probable state has to be 'Healty'm, but got", vpath.Path[0],
 		)
 	}
-	if vpath.Path[1] != incomingStates[0] {
+	if vpath.Path[1] != incStates[0] {
 		t.Error(
 			"Second most probable state has to be 'Healty'm, but got", vpath.Path[1],
 		)
 	}
-	if vpath.Path[2] != incomingStates[1] {
+	if vpath.Path[2] != incStates[1] {
 		t.Error(
 			"Third most probable state has to be 'Fever'm, but got", vpath.Path[2],
 		)
@@ -91,7 +90,7 @@ func TestViterbiEvalPath(t *testing.T) {
 func TestFindPath(t *testing.T) {
 
 	var (
-		incomingStates = map[string]CustomState{
+		incStates = map[string]CustomState{
 			"0":  CustomState{Name: "0", id: 0},
 			"1":  CustomState{Name: "1", id: 1},
 			"3":  CustomState{Name: "3", id: 2},
@@ -119,8 +118,8 @@ func TestFindPath(t *testing.T) {
 	)
 
 	v := New()
-	for i := range incomingStates {
-		v.AddState(incomingStates[i])
+	for i := range incStates {
+		v.AddState(incStates[i])
 	}
 	v.AddObservation(incomingObservations["p1"])
 	v.AddObservation(incomingObservations["p2"])
@@ -129,62 +128,103 @@ func TestFindPath(t *testing.T) {
 	v.AddObservation(incomingObservations["p5"])
 	v.AddObservation(incomingObservations["p6"])
 
-	v.PutStartProbability(incomingStates["0"], 0.498948)
-	v.PutStartProbability(incomingStates["1"], 0.501052)
+	v.PutStartProbability(incStates["0"], 0.498948)
+	v.PutStartProbability(incStates["1"], 0.501052)
 
-	v.PutEmissionProbability(incomingStates["13"], incomingObservations["p5"], 0.200848)
-	v.PutEmissionProbability(incomingStates["14"], incomingObservations["p5"], 0.201200)
-	v.PutEmissionProbability(incomingStates["15"], incomingObservations["p5"], 0.196290)
-	v.PutEmissionProbability(incomingStates["16"], incomingObservations["p5"], 0.198854)
-	v.PutEmissionProbability(incomingStates["18"], incomingObservations["p6"], 0.332632)
-	v.PutEmissionProbability(incomingStates["19"], incomingObservations["p6"], 0.271434)
-	v.PutEmissionProbability(incomingStates["20"], incomingObservations["p6"], 0.395933)
-	v.PutEmissionProbability(incomingStates["0"], incomingObservations["p1"], 0.498948)
-	v.PutEmissionProbability(incomingStates["1"], incomingObservations["p1"], 0.501052)
-	v.PutEmissionProbability(incomingStates["3"], incomingObservations["p2"], 0.502071)
-	v.PutEmissionProbability(incomingStates["4"], incomingObservations["p2"], 0.497929)
-	v.PutEmissionProbability(incomingStates["6"], incomingObservations["p3"], 0.516182)
-	v.PutEmissionProbability(incomingStates["7"], incomingObservations["p3"], 0.483818)
-	v.PutEmissionProbability(incomingStates["9"], incomingObservations["p4"], 1.0)
-	v.PutEmissionProbability(incomingStates["12"], incomingObservations["p5"], 0.202807)
+	v.PutEmissionProbability(incStates["13"], incomingObservations["p5"], 0.200848)
+	v.PutEmissionProbability(incStates["14"], incomingObservations["p5"], 0.201200)
+	v.PutEmissionProbability(incStates["15"], incomingObservations["p5"], 0.196290)
+	v.PutEmissionProbability(incStates["16"], incomingObservations["p5"], 0.198854)
+	v.PutEmissionProbability(incStates["18"], incomingObservations["p6"], 0.332632)
+	v.PutEmissionProbability(incStates["19"], incomingObservations["p6"], 0.271434)
+	v.PutEmissionProbability(incStates["20"], incomingObservations["p6"], 0.395933)
+	v.PutEmissionProbability(incStates["0"], incomingObservations["p1"], 0.498948)
+	v.PutEmissionProbability(incStates["1"], incomingObservations["p1"], 0.501052)
+	v.PutEmissionProbability(incStates["3"], incomingObservations["p2"], 0.502071)
+	v.PutEmissionProbability(incStates["4"], incomingObservations["p2"], 0.497929)
+	v.PutEmissionProbability(incStates["6"], incomingObservations["p3"], 0.516182)
+	v.PutEmissionProbability(incStates["7"], incomingObservations["p3"], 0.483818)
+	v.PutEmissionProbability(incStates["9"], incomingObservations["p4"], 1.0)
+	v.PutEmissionProbability(incStates["12"], incomingObservations["p5"], 0.202807)
 
-	v.PutTransitionProbability(incomingStates["0"], incomingStates["3"], 0.680289)
-	v.PutTransitionProbability(incomingStates["0"], incomingStates["4"], 0.319711)
-	v.PutTransitionProbability(incomingStates["1"], incomingStates["3"], 0.319711)
-	v.PutTransitionProbability(incomingStates["1"], incomingStates["4"], 0.680289)
-	v.PutTransitionProbability(incomingStates["3"], incomingStates["6"], 0.934306)
-	v.PutTransitionProbability(incomingStates["3"], incomingStates["7"], 0.065694)
-	v.PutTransitionProbability(incomingStates["4"], incomingStates["6"], 0.882777)
-	v.PutTransitionProbability(incomingStates["4"], incomingStates["7"], 0.117223)
-	v.PutTransitionProbability(incomingStates["7"], incomingStates["9"], 1.0)
-	v.PutTransitionProbability(incomingStates["6"], incomingStates["9"], 1.0)
-	v.PutTransitionProbability(incomingStates["14"], incomingStates["19"], 0.000101)
-	v.PutTransitionProbability(incomingStates["14"], incomingStates["20"], 0.999722)
-	v.PutTransitionProbability(incomingStates["15"], incomingStates["18"], 0.000177)
-	v.PutTransitionProbability(incomingStates["15"], incomingStates["19"], 0.000101)
-	v.PutTransitionProbability(incomingStates["15"], incomingStates["20"], 0.999722)
-	v.PutTransitionProbability(incomingStates["9"], incomingStates["13"], 0.309430)
-	v.PutTransitionProbability(incomingStates["9"], incomingStates["15"], 0.381140)
-	v.PutTransitionProbability(incomingStates["9"], incomingStates["16"], 0.309430)
-	v.PutTransitionProbability(incomingStates["12"], incomingStates["18"], 0.000177)
-	v.PutTransitionProbability(incomingStates["12"], incomingStates["19"], 0.000101)
-	v.PutTransitionProbability(incomingStates["12"], incomingStates["20"], 0.999722)
-	v.PutTransitionProbability(incomingStates["13"], incomingStates["20"], 0.999722)
-	v.PutTransitionProbability(incomingStates["14"], incomingStates["18"], 0.000177)
-	v.PutTransitionProbability(incomingStates["16"], incomingStates["18"], 0.000177)
-	v.PutTransitionProbability(incomingStates["16"], incomingStates["19"], 0.000101)
-	v.PutTransitionProbability(incomingStates["16"], incomingStates["20"], 0.999722)
-	v.PutTransitionProbability(incomingStates["13"], incomingStates["18"], 0.000177)
-	v.PutTransitionProbability(incomingStates["13"], incomingStates["19"], 0.000101)
+	v.PutTransitionProbability(incStates["0"], incStates["3"], 0.680289)
+	v.PutTransitionProbability(incStates["0"], incStates["4"], 0.319711)
+	v.PutTransitionProbability(incStates["1"], incStates["3"], 0.319711)
+	v.PutTransitionProbability(incStates["1"], incStates["4"], 0.680289)
+	v.PutTransitionProbability(incStates["3"], incStates["6"], 0.934306)
+	v.PutTransitionProbability(incStates["3"], incStates["7"], 0.065694)
+	v.PutTransitionProbability(incStates["4"], incStates["6"], 0.882777)
+	v.PutTransitionProbability(incStates["4"], incStates["7"], 0.117223)
+	v.PutTransitionProbability(incStates["7"], incStates["9"], 1.0)
+	v.PutTransitionProbability(incStates["6"], incStates["9"], 1.0)
+	v.PutTransitionProbability(incStates["14"], incStates["19"], 0.000101)
+	v.PutTransitionProbability(incStates["14"], incStates["20"], 0.999722)
+	v.PutTransitionProbability(incStates["15"], incStates["18"], 0.000177)
+	v.PutTransitionProbability(incStates["15"], incStates["19"], 0.000101)
+	v.PutTransitionProbability(incStates["15"], incStates["20"], 0.999722)
+	v.PutTransitionProbability(incStates["9"], incStates["13"], 0.309430)
+	v.PutTransitionProbability(incStates["9"], incStates["15"], 0.381140)
+	v.PutTransitionProbability(incStates["9"], incStates["16"], 0.309430)
+	v.PutTransitionProbability(incStates["12"], incStates["18"], 0.000177)
+	v.PutTransitionProbability(incStates["12"], incStates["19"], 0.000101)
+	v.PutTransitionProbability(incStates["12"], incStates["20"], 0.999722)
+	v.PutTransitionProbability(incStates["13"], incStates["20"], 0.999722)
+	v.PutTransitionProbability(incStates["14"], incStates["18"], 0.000177)
+	v.PutTransitionProbability(incStates["16"], incStates["18"], 0.000177)
+	v.PutTransitionProbability(incStates["16"], incStates["19"], 0.000101)
+	v.PutTransitionProbability(incStates["16"], incStates["20"], 0.999722)
+	v.PutTransitionProbability(incStates["13"], incStates["18"], 0.000177)
+	v.PutTransitionProbability(incStates["13"], incStates["19"], 0.000101)
 
-	actual := v.EvalPath()
-	log.Println(actual.Probability)
-	for i := range actual.Path {
-		log.Println(actual.Path[i].(CustomState).Name)
+	vpath := v.EvalPath()
+
+	fmt.Println("prob:", vpath.Probability)
+	fmt.Println("path:")
+	for i := range vpath.Path {
+		fmt.Println("\t", vpath.Path[i])
 	}
 
-	t.Error(actual.Probability)
-	// t.Error(actual)
+	if vpath.Probability != 0.0012143525979397374 {
+		t.Error(
+			"probability has to be 0.0012143525979397374, but got", vpath.Probability,
+		)
+	}
+	if len(vpath.Path) != 6 {
+		t.Error(
+			"length of found path has to be 6, but got", len(vpath.Path),
+		)
+	}
+	if vpath.Path[0] != incStates["0"] {
+		t.Error(
+			"First state has to be S0, but got", vpath.Path[0],
+		)
+	}
+	if vpath.Path[1] != incStates["3"] {
+		t.Error(
+			"Second state has to be S3, but got", vpath.Path[1],
+		)
+	}
+	if vpath.Path[2] != incStates["6"] {
+		t.Error(
+			"Third state has to be S6, but got", vpath.Path[2],
+		)
+	}
+	if vpath.Path[3] != incStates["9"] {
+		t.Error(
+			"Fourth state has to be S9, but got", vpath.Path[3],
+		)
+	}
+	if vpath.Path[4] != incStates["15"] {
+		t.Error(
+			"Fourth state has to be S15, but got", vpath.Path[3],
+		)
+	}
+	if vpath.Path[5] != incStates["20"] {
+		t.Error(
+			"Fourth state has to be S20, but got", vpath.Path[3],
+		)
+	}
+
 }
 
 func TestViterbiEvalPathLogProbabilities(t *testing.T) {
@@ -273,35 +313,34 @@ func TestViterbiEvalPathLogProbabilities(t *testing.T) {
 		fmt.Println("\t", vpath.Path[i])
 	}
 
-	t.Error(0)
-	// if vpath.Probability != -1926.893407386203 {
-	// 	t.Error(
-	// 		"probability has to be -1926.893407386203, but got", vpath.Probability,
-	// 	)
-	// }
-	// if len(vpath.Path) != 4 {
-	// 	t.Error(
-	// 		"length of found path has to be 4, but got", len(vpath.Path),
-	// 	)
-	// }
-	// if vpath.Path[0] != incStates[0] {
-	// 	t.Error(
-	// 		"First state has to be r11, but got", vpath.Path[0],
-	// 	)
-	// }
-	// if vpath.Path[1] != incStates[2] {
-	// 	t.Error(
-	// 		"Second state has to be r11, but got", vpath.Path[1],
-	// 	)
-	// }
-	// if vpath.Path[2] != incStates[4] {
-	// 	t.Error(
-	// 		"Third state has to be r31, but got", vpath.Path[2],
-	// 	)
-	// }
-	// if vpath.Path[3] != incStates[7] {
-	// 	t.Error(
-	// 		"Fourth state has to be r41, but got", vpath.Path[3],
-	// 	)
-	// }
+	if vpath.Probability != -1926.893407386203 {
+		t.Error(
+			"probability has to be -1926.893407386203, but got", vpath.Probability,
+		)
+	}
+	if len(vpath.Path) != 4 {
+		t.Error(
+			"length of found path has to be 4, but got", len(vpath.Path),
+		)
+	}
+	if vpath.Path[0] != incStates[0] {
+		t.Error(
+			"First state has to be r11, but got", vpath.Path[0],
+		)
+	}
+	if vpath.Path[1] != incStates[2] {
+		t.Error(
+			"Second state has to be r11, but got", vpath.Path[1],
+		)
+	}
+	if vpath.Path[2] != incStates[4] {
+		t.Error(
+			"Third state has to be r31, but got", vpath.Path[2],
+		)
+	}
+	if vpath.Path[3] != incStates[7] {
+		t.Error(
+			"Fourth state has to be r41, but got", vpath.Path[3],
+		)
+	}
 }
