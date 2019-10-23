@@ -107,7 +107,7 @@ func (v Viterbi) EvalPath() ViterbiPath {
 		for _, y = range v.states {
 			maxTransitionProbability := V[t-1][v.states[0]].prob * v.transitionProbabilities[TransitionHash{v.states[0], y}]
 			tmpState := v.states[0]
-			for _, prevState := range v.states[1:] {
+			for _, prevState := range v.states {
 				transitionProbability := V[t-1][prevState].prob * v.transitionProbabilities[TransitionHash{prevState, y}]
 				if transitionProbability > maxTransitionProbability {
 					maxTransitionProbability = transitionProbability
@@ -173,8 +173,8 @@ func (v Viterbi) EvalPathLogProbabilities() ViterbiPath {
 
 			maxTransitionProbability := V[t-1][v.states[0]].prob + v.transitionProbabilities[TransitionHash{v.states[0], currentState}]
 			tmpState := v.states[0]
-			for _, prevState := range v.states[1:] {
-				fmt.Println("\t\t from", prevState)
+			for _, prevState := range v.states {
+				fmt.Println("\t\t from", prevState, V[t-1][prevState].prob, v.transitionProbabilities[TransitionHash{prevState, currentState}])
 				if _, ok := v.transitionProbabilities[TransitionHash{prevState, currentState}]; !ok {
 					// No transition between states
 					continue
