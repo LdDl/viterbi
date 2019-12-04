@@ -195,7 +195,6 @@ func (v Viterbi) EvalPathLogProbabilities() ViterbiPath {
 				}
 
 				transitionProbability := V[t-1][prevState].prob + v.transitionProbabilities[TransitionHash{prevState, currentState}]
-				// fmt.Println("tProp", transitionProbability, v.transitionProbabilities[TransitionHash{prevState, y}], V[t-1][prevState].prob)
 				if transitionProbability > maxTransitionProbability {
 					maxTransitionProbability = transitionProbability
 					tmpState = prevState
