@@ -313,9 +313,9 @@ func TestViterbiEvalPathLogProbabilities(t *testing.T) {
 		fmt.Println("\t", vpath.Path[i])
 	}
 
-	if vpath.Probability != -1926.893407386203 {
+	if vpath.Probability != -1932.2344194557202 {
 		t.Error(
-			"probability has to be -1926.893407386203, but got", vpath.Probability,
+			"probability has to be -1932.2344194557202, but got", vpath.Probability,
 		)
 	}
 	if len(vpath.Path) != 4 {

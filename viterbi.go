@@ -90,13 +90,14 @@ func (v Viterbi) EvalPath() ViterbiPath {
 	var (
 		V     []map[State]ViterbiVal
 		path  map[State][]State
-		maxPr = 0.0
+		maxPr = -math.MaxFloat64
 	)
 
 	V = append(V, make(map[State]ViterbiVal))
 	path = make(map[State][]State)
 
-	for _, st := range v.states {
+	for s := range v.states {
+		st := v.states[s]
 		if _, ok := v.startProbabilities[st]; !ok {
 			continue
 		}
@@ -106,30 +107,32 @@ func (v Viterbi) EvalPath() ViterbiPath {
 
 	for t := 1; t < len(v.observations); t++ {
 		V = append(V, make(map[State]ViterbiVal))
-		for _, currentState := range v.states {
-			if _, ok := v.emissionProbabilities[EmissionHash{currentState, v.observations[t]}]; !ok {
+		for s1 := range v.states {
+			s := v.states[s1]
+			if _, ok := v.emissionProbabilities[EmissionHash{s, v.observations[t]}]; !ok {
 				// No emission for current state of current observation
 				continue
 			}
-			maxTransitionProbability := V[t-1][v.states[0]].prob * v.transitionProbabilities[TransitionHash{v.states[0], currentState}]
+			maxTransitionProbability := -math.MaxFloat64
 			tmpState := v.states[0]
-			for _, prevState := range v.states {
-				if _, ok := v.transitionProbabilities[TransitionHash{prevState, currentState}]; !ok {
+			for s2 := range v.states {
+				r := v.states[s2]
+				if _, ok := v.transitionProbabilities[TransitionHash{r, s}]; !ok {
 					// No transition between states
 					continue
 				}
-				if _, ok := V[t-1][prevState]; !ok {
+				if _, ok := V[t-1][r]; !ok {
 					// No probability from state to observation
 					continue
 				}
-				transitionProbability := V[t-1][prevState].prob * v.transitionProbabilities[TransitionHash{prevState, currentState}]
+				transitionProbability := V[t-1][r].prob * v.transitionProbabilities[TransitionHash{r, s}]
 				if transitionProbability > maxTransitionProbability {
 					maxTransitionProbability = transitionProbability
-					tmpState = prevState
+					tmpState = r
 				}
 			}
-			maxProbability := maxTransitionProbability * v.emissionProbabilities[EmissionHash{currentState, v.observations[t]}]
-			V[t][currentState] = ViterbiVal{prob: maxProbability, prev: tmpState}
+			maxProbability := maxTransitionProbability * v.emissionProbabilities[EmissionHash{s, v.observations[t]}]
+			V[t][s] = ViterbiVal{prob: maxProbability, prev: tmpState}
 		}
 	}
 
@@ -167,41 +170,43 @@ func (v Viterbi) EvalPathLogProbabilities() ViterbiPath {
 	V = append(V, make(map[State]ViterbiVal))
 	path = make(map[State][]State)
 
-	for _, y := range v.states {
-		if _, ok := v.startProbabilities[y]; !ok {
+	for s := range v.states {
+		st := v.states[s]
+		if _, ok := v.startProbabilities[st]; !ok {
 			continue
 		}
-		V[0][y] = ViterbiVal{prob: v.emissionProbabilities[EmissionHash{y, v.observations[0]}]}
-		path[y] = append(path[y], y)
+		V[0][st] = ViterbiVal{prob: v.startProbabilities[st] + v.emissionProbabilities[EmissionHash{st, v.observations[0]}]}
+		path[st] = append(path[st], st)
 	}
 
 	for t := 1; t < len(v.observations); t++ {
 		V = append(V, make(map[State]ViterbiVal))
-		for _, currentState := range v.states {
-			if _, ok := v.emissionProbabilities[EmissionHash{currentState, v.observations[t]}]; !ok {
+		for s1 := range v.states {
+			s := v.states[s1]
+			if _, ok := v.emissionProbabilities[EmissionHash{s, v.observations[t]}]; !ok {
 				// No emission for current state of current observation
 				continue
 			}
 			maxTransitionProbability := -math.MaxFloat64
 			tmpState := v.states[0]
-			for _, prevState := range v.states {
-				if _, ok := v.transitionProbabilities[TransitionHash{prevState, currentState}]; !ok {
+			for s2 := range v.states {
+				r := v.states[s2]
+				if _, ok := v.transitionProbabilities[TransitionHash{r, s}]; !ok {
 					// No transition between states
 					continue
 				}
-				if _, ok := V[t-1][prevState]; !ok {
+				if _, ok := V[t-1][r]; !ok {
 					// No probability from state to observation
 					continue
 				}
-
-				transitionProbability := V[t-1][prevState].prob + v.transitionProbabilities[TransitionHash{prevState, currentState}]
+				transitionProbability := V[t-1][r].prob + v.transitionProbabilities[TransitionHash{r, s}]
 				if transitionProbability > maxTransitionProbability {
 					maxTransitionProbability = transitionProbability
-					tmpState = prevState
+					tmpState = r
 				}
 			}
-			maxProbability := maxTransitionProbability + v.emissionProbabilities[EmissionHash{currentState, v.observations[t]}]
-			V[t][currentState] = ViterbiVal{prob: maxProbability, prev: tmpState}
+			maxProbability := maxTransitionProbability + v.emissionProbabilities[EmissionHash{s, v.observations[t]}]
+			V[t][s] = ViterbiVal{prob: maxProbability, prev: tmpState}
 		}
 	}
 
