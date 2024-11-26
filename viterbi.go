@@ -115,23 +115,36 @@ func (v Viterbi) EvalPath() ViterbiPath {
 			}
 			maxTransitionProbability := -math.MaxFloat64
 			tmpState := v.states[0]
+			metFirst := false
 			for s2 := range v.states {
 				r := v.states[s2]
-				if _, ok := v.transitionProbabilities[TransitionHash{r, s}]; !ok {
+				vTransition, ok := v.transitionProbabilities[TransitionHash{r, s}]
+				if !ok {
 					// No transition between states
 					continue
 				}
-				if _, ok := V[t-1][r]; !ok {
+				stateProb, ok := V[t-1][r]
+				if !ok {
 					// No probability from state to observation
 					continue
 				}
-				transitionProbability := V[t-1][r].prob * v.transitionProbabilities[TransitionHash{r, s}]
+				if !metFirst {
+					metFirst = true
+					tmpState = r
+				}
+				transitionProbability := vTransition
+				if vTransition > -math.MaxFloat64 {
+					transitionProbability *= stateProb.prob
+				}
 				if transitionProbability > maxTransitionProbability {
 					maxTransitionProbability = transitionProbability
 					tmpState = r
 				}
 			}
-			maxProbability := maxTransitionProbability * v.emissionProbabilities[EmissionHash{s, v.observations[t]}]
+			maxProbability := maxTransitionProbability
+			if maxProbability > -math.MaxFloat64 {
+				maxProbability *= v.emissionProbabilities[EmissionHash{s, v.observations[t]}]
+			}
 			V[t][s] = ViterbiVal{prob: maxProbability, prev: tmpState}
 		}
 	}
@@ -189,23 +202,36 @@ func (v Viterbi) EvalPathLogProbabilities() ViterbiPath {
 			}
 			maxTransitionProbability := -math.MaxFloat64
 			tmpState := v.states[0]
+			metFirst := false
 			for s2 := range v.states {
 				r := v.states[s2]
-				if _, ok := v.transitionProbabilities[TransitionHash{r, s}]; !ok {
+				vTransition, ok := v.transitionProbabilities[TransitionHash{r, s}]
+				if !ok {
 					// No transition between states
 					continue
 				}
-				if _, ok := V[t-1][r]; !ok {
+				stateProb, ok := V[t-1][r]
+				if !ok {
 					// No probability from state to observation
 					continue
 				}
-				transitionProbability := V[t-1][r].prob + v.transitionProbabilities[TransitionHash{r, s}]
+				if !metFirst {
+					metFirst = true
+					tmpState = r
+				}
+				transitionProbability := vTransition
+				if vTransition > -math.MaxFloat64 {
+					transitionProbability += stateProb.prob
+				}
 				if transitionProbability > maxTransitionProbability {
 					maxTransitionProbability = transitionProbability
 					tmpState = r
 				}
 			}
-			maxProbability := maxTransitionProbability + v.emissionProbabilities[EmissionHash{s, v.observations[t]}]
+			maxProbability := maxTransitionProbability
+			if maxProbability > -math.MaxFloat64 {
+				maxProbability += v.emissionProbabilities[EmissionHash{s, v.observations[t]}]
+			}
 			V[t][s] = ViterbiVal{prob: maxProbability, prev: tmpState}
 		}
 	}
