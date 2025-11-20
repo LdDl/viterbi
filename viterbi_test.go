@@ -35,7 +35,7 @@ func TestViterbiEvalPath(t *testing.T) {
 			CustomObservation{Name: "dizzy", id: 3},
 		}
 	)
-	var v Viterbi
+	v := New()
 	for i := range incStates {
 		v.AddState(incStates[i])
 	}
@@ -242,7 +242,7 @@ func TestViterbiEvalPathLogProbabilities(t *testing.T) {
 			CustomObservation{Name: "gps4", id: 4},
 		}
 	)
-	var v Viterbi
+	v := New()
 	for i := range incStates {
 		v.AddState(incStates[i])
 	}

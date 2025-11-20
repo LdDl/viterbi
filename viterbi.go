@@ -19,7 +19,7 @@ type TransitionHash struct {
 
 type EmissionHash struct {
 	State       State
-	observation Observation
+	Observation Observation
 }
 
 type Viterbi struct {
@@ -57,43 +57,39 @@ func (v *Viterbi) AddObservation(obs Observation) {
 }
 
 func (v *Viterbi) PutStartProbability(state State, val float64) {
-	if v.startProbabilities == nil {
-		v.startProbabilities = make(map[State]float64)
-	}
 	v.startProbabilities[state] = val
 }
 
 func (v *Viterbi) PutEmissionProbability(s State, obs Observation, val float64) {
-	if v.emissionProbabilities == nil {
-		v.emissionProbabilities = make(map[EmissionHash]float64)
-	}
 	emKey := EmissionHash{s, obs}
-	if _, ok := v.emissionProbabilities[emKey]; !ok {
-		v.emissionProbabilities[emKey] = val
-	}
+	v.emissionProbabilities[emKey] = val
 }
 
 func (v *Viterbi) PutTransitionProbability(f State, t State, val float64) {
-	if v.transitionProbabilities == nil {
-		v.transitionProbabilities = make(map[TransitionHash]float64)
-	}
 	trKey := TransitionHash{f, t}
-	if _, ok := v.transitionProbabilities[trKey]; !ok {
-		v.transitionProbabilities[trKey] = val
-	}
+	v.transitionProbabilities[trKey] = val
 }
 
 // EvalPath see ref bellow
 // https://en.wikipedia.org/wiki/Viterbi_algorithm#Pseudocode
 // When every probability is in [0;1]
 func (v Viterbi) EvalPath() ViterbiPath {
+	// Check for edge cases
+	if len(v.observations) == 0 {
+		return ViterbiPath{Probability: 0.0, Path: nil}
+	}
+	if len(v.states) == 0 {
+		return ViterbiPath{Probability: 0.0, Path: nil}
+	}
+
 	var (
-		V     []map[State]ViterbiVal
+		V     = make([]map[State]ViterbiVal, len(v.observations))
 		path  map[State][]State
-		maxPr = -math.MaxFloat64
+		maxPr = 0.0
 	)
 
-	V = append(V, make(map[State]ViterbiVal))
+	// Initialize first time step
+	V[0] = make(map[State]ViterbiVal)
 	path = make(map[State][]State)
 
 	for s := range v.states {
@@ -106,16 +102,16 @@ func (v Viterbi) EvalPath() ViterbiPath {
 	}
 
 	for t := 1; t < len(v.observations); t++ {
-		V = append(V, make(map[State]ViterbiVal))
+		V[t] = make(map[State]ViterbiVal)
 		for s1 := range v.states {
 			s := v.states[s1]
 			if _, ok := v.emissionProbabilities[EmissionHash{s, v.observations[t]}]; !ok {
 				// No emission for current state of current observation
 				continue
 			}
-			maxTransitionProbability := -math.MaxFloat64
-			tmpState := v.states[0]
-			metFirst := false
+			maxTransitionProbability := 0.0
+			var tmpState State
+			foundValidTransition := false
 			for s2 := range v.states {
 				r := v.states[s2]
 				vTransition, ok := v.transitionProbabilities[TransitionHash{r, s}]
@@ -128,25 +124,26 @@ func (v Viterbi) EvalPath() ViterbiPath {
 					// No probability from state to observation
 					continue
 				}
-				if !metFirst {
-					metFirst = true
-					tmpState = r
-				}
-				transitionProbability := vTransition
-				if vTransition > -math.MaxFloat64 {
-					transitionProbability *= stateProb.prob
-				}
-				if transitionProbability > maxTransitionProbability {
+				transitionProbability := vTransition * stateProb.prob
+				if !foundValidTransition || transitionProbability > maxTransitionProbability {
 					maxTransitionProbability = transitionProbability
 					tmpState = r
+					foundValidTransition = true
 				}
 			}
-			maxProbability := maxTransitionProbability
-			if maxProbability > -math.MaxFloat64 {
-				maxProbability *= v.emissionProbabilities[EmissionHash{s, v.observations[t]}]
+			if !foundValidTransition {
+				// No valid transition found for this state
+				continue
 			}
+			maxProbability := maxTransitionProbability * v.emissionProbabilities[EmissionHash{s, v.observations[t]}]
 			V[t][s] = ViterbiVal{prob: maxProbability, prev: tmpState}
 		}
+	}
+
+	// Find the maximum probability in the last time step
+	if len(V[len(V)-1]) == 0 {
+		// No valid path found
+		return ViterbiPath{Probability: maxPr, Path: nil}
 	}
 
 	for _, value := range V[len(V)-1] {
@@ -157,13 +154,21 @@ func (v Viterbi) EvalPath() ViterbiPath {
 
 	opt := []State{}
 	var previous State
+	foundFinalState := false
 	for st, value := range V[len(V)-1] {
 		if value.prob == maxPr {
 			opt = append(opt, st)
 			previous = st
+			foundFinalState = true
 			break
 		}
 	}
+
+	if !foundFinalState {
+		return ViterbiPath{Probability: maxPr, Path: nil}
+	}
+
+	// Backtrack to find the path
 	for t := len(V) - 2; t >= 0; t-- {
 		opt = append([]State{V[t+1][previous].prev}, opt...)
 		previous = V[t+1][previous].prev
@@ -174,13 +179,22 @@ func (v Viterbi) EvalPath() ViterbiPath {
 
 // EvalPathLogProbabilities When every probability is logarithmic
 func (v Viterbi) EvalPathLogProbabilities() ViterbiPath {
+	// Check for edge cases
+	if len(v.observations) == 0 {
+		return ViterbiPath{Probability: math.Inf(-1), Path: nil}
+	}
+	if len(v.states) == 0 {
+		return ViterbiPath{Probability: math.Inf(-1), Path: nil}
+	}
+
 	var (
-		V     []map[State]ViterbiVal
+		V     = make([]map[State]ViterbiVal, len(v.observations))
 		path  map[State][]State
-		maxPr = -math.MaxFloat64
+		maxPr = math.Inf(-1)
 	)
 
-	V = append(V, make(map[State]ViterbiVal))
+	// Initialize first time step
+	V[0] = make(map[State]ViterbiVal)
 	path = make(map[State][]State)
 
 	for s := range v.states {
@@ -193,16 +207,16 @@ func (v Viterbi) EvalPathLogProbabilities() ViterbiPath {
 	}
 
 	for t := 1; t < len(v.observations); t++ {
-		V = append(V, make(map[State]ViterbiVal))
+		V[t] = make(map[State]ViterbiVal)
 		for s1 := range v.states {
 			s := v.states[s1]
 			if _, ok := v.emissionProbabilities[EmissionHash{s, v.observations[t]}]; !ok {
 				// No emission for current state of current observation
 				continue
 			}
-			maxTransitionProbability := -math.MaxFloat64
-			tmpState := v.states[0]
-			metFirst := false
+			maxTransitionProbability := math.Inf(-1)
+			var tmpState State
+			foundValidTransition := false
 			for s2 := range v.states {
 				r := v.states[s2]
 				vTransition, ok := v.transitionProbabilities[TransitionHash{r, s}]
@@ -215,25 +229,26 @@ func (v Viterbi) EvalPathLogProbabilities() ViterbiPath {
 					// No probability from state to observation
 					continue
 				}
-				if !metFirst {
-					metFirst = true
-					tmpState = r
-				}
-				transitionProbability := vTransition
-				if vTransition > -math.MaxFloat64 {
-					transitionProbability += stateProb.prob
-				}
-				if transitionProbability > maxTransitionProbability {
+				transitionProbability := vTransition + stateProb.prob
+				if !foundValidTransition || transitionProbability > maxTransitionProbability {
 					maxTransitionProbability = transitionProbability
 					tmpState = r
+					foundValidTransition = true
 				}
 			}
-			maxProbability := maxTransitionProbability
-			if maxProbability > -math.MaxFloat64 {
-				maxProbability += v.emissionProbabilities[EmissionHash{s, v.observations[t]}]
+			if !foundValidTransition {
+				// No valid transition found for this state
+				continue
 			}
+			maxProbability := maxTransitionProbability + v.emissionProbabilities[EmissionHash{s, v.observations[t]}]
 			V[t][s] = ViterbiVal{prob: maxProbability, prev: tmpState}
 		}
+	}
+
+	// Find the maximum probability in the last time step
+	if len(V[len(V)-1]) == 0 {
+		// No valid path found
+		return ViterbiPath{Probability: maxPr, Path: nil}
 	}
 
 	for _, value := range V[len(V)-1] {
@@ -244,13 +259,21 @@ func (v Viterbi) EvalPathLogProbabilities() ViterbiPath {
 
 	opt := []State{}
 	var previous State
+	foundFinalState := false
 	for st, value := range V[len(V)-1] {
 		if value.prob == maxPr {
 			opt = append(opt, st)
 			previous = st
+			foundFinalState = true
 			break
 		}
 	}
+
+	if !foundFinalState {
+		return ViterbiPath{Probability: maxPr, Path: nil}
+	}
+
+	// Backtrack to find the path
 	for t := len(V) - 2; t >= 0; t-- {
 		opt = append([]State{V[t+1][previous].prev}, opt...)
 		previous = V[t+1][previous].prev
