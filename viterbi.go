@@ -258,17 +258,12 @@ func (v Viterbi) EvalPathLogProbabilities() (ViterbiPath, error) {
 		if !hasStart {
 			continue
 		}
-		// For log probabilities, validate they're not positive (log of prob > 1)
-		if startProb > 0 {
-			return ViterbiPath{}, fmt.Errorf("%w: log start probability %f for state %v should be <= 0", ErrInvalidProbability, startProb, st)
-		}
+		// Note: Log probabilities CAN be positive when working with probability density functions (PDFs)
+		// where the density exceeds 1. This is mathematically valid and typically occurs with small
+		// parameters in exponential distributions used for map matching.
 		emissionProb, hasEmission := v.emissionProbabilities[EmissionHash{st, v.observations[0]}]
 		if !hasEmission {
 			continue
-		}
-		// Validate log emission probability
-		if emissionProb > 0 {
-			return ViterbiPath{}, fmt.Errorf("%w: log emission probability %f for state %v and observation %v should be <= 0", ErrInvalidProbability, emissionProb, st, v.observations[0])
 		}
 		// Check for -Inf values which would break the path
 		if math.IsInf(startProb, -1) || math.IsInf(emissionProb, -1) {
@@ -293,10 +288,6 @@ func (v Viterbi) EvalPathLogProbabilities() (ViterbiPath, error) {
 				// No emission for current state of current observation
 				continue
 			}
-			// Validate log emission probability
-			if emissionProb > 0 {
-				return ViterbiPath{}, fmt.Errorf("%w: log emission probability %f for state %v and observation %v should be <= 0", ErrInvalidProbability, emissionProb, s, v.observations[t])
-			}
 			// Skip if -Inf (impossible emission)
 			if math.IsInf(emissionProb, -1) {
 				continue
@@ -311,10 +302,6 @@ func (v Viterbi) EvalPathLogProbabilities() (ViterbiPath, error) {
 				if !ok {
 					// No transition between states
 					continue
-				}
-				// Validate log transition probability
-				if vTransition > 0 {
-					return ViterbiPath{}, fmt.Errorf("%w: log transition probability %f from state %v to %v should be <= 0", ErrInvalidProbability, vTransition, r, s)
 				}
 				stateProb, ok := V[t-1][r]
 				if !ok {
