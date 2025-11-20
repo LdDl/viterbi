@@ -58,7 +58,10 @@ func TestViterbiEvalPath(t *testing.T) {
 	v.PutTransitionProbability(incStates[1], incStates[0], 0.4)
 	v.PutTransitionProbability(incStates[1], incStates[1], 0.6)
 
-	vpath := v.EvalPath()
+	vpath, err := v.EvalPath()
+	if err != nil {
+		t.Fatalf("EvalPath failed: %v", err)
+	}
 
 	if len(vpath.Path) != 3 {
 		t.Error(
@@ -176,7 +179,10 @@ func TestFindPath(t *testing.T) {
 	v.PutTransitionProbability(incStates["13"], incStates["18"], 0.000177)
 	v.PutTransitionProbability(incStates["13"], incStates["19"], 0.000101)
 
-	vpath := v.EvalPath()
+	vpath, err := v.EvalPath()
+	if err != nil {
+		t.Fatalf("EvalPath failed: %v", err)
+	}
 
 	fmt.Println("prob:", vpath.Probability)
 	fmt.Println("path:")
@@ -280,7 +286,7 @@ func TestViterbiEvalPathLogProbabilities(t *testing.T) {
 	v.PutTransitionProbability(incStates[1], incStates[3], -1283.6730720901721)
 	// fmt.Printf("Transition from rp22 (3) to rp22 (3) is %f\n", -1283.6730720901721)
 
-	v.PutTransitionProbability(incStates[2], incStates[4], 4.646573599499615)
+	v.PutTransitionProbability(incStates[2], incStates[4], -4.646573599499615)
 	// fmt.Printf("Transition from rp21 (2) to rp31 (4) is %f\n", 4.646573599499615)
 	v.PutTransitionProbability(incStates[2], incStates[5], -2079.898401500611)
 	// fmt.Printf("Transition from rp21 (2) to rp32 (5) is %f\n", -2079.898401500611)
@@ -290,7 +296,7 @@ func TestViterbiEvalPathLogProbabilities(t *testing.T) {
 	// fmt.Printf("Transition from rp22 (3) to rp31 (4) is %f\n", -6248.988351700831)
 	v.PutTransitionProbability(incStates[3], incStates[5], -4164.443376600721)
 	// fmt.Printf("Transition from rp22 (3) to rp32 (5) is %f\n", -4164.443376600721)
-	v.PutTransitionProbability(incStates[3], incStates[6], 4.646573599499615)
+	v.PutTransitionProbability(incStates[3], incStates[6], -4.646573599499615)
 	// fmt.Printf("Transition from rp22 (3) to rp33 (6) is %f\n", 4.646573599499615)
 
 	v.PutTransitionProbability(incStates[4], incStates[7], -626.5028606174612)
@@ -306,16 +312,19 @@ func TestViterbiEvalPathLogProbabilities(t *testing.T) {
 	v.PutTransitionProbability(incStates[6], incStates[8], -626.5028606174612)
 	// fmt.Printf("Transition from rp33 (6) to rp42 (8) is %f\n", -626.5028606174612)
 
-	vpath := v.EvalPathLogProbabilities()
+	vpath, err := v.EvalPathLogProbabilities()
+	if err != nil {
+		t.Fatalf("EvalPathLogProbabilities failed: %v", err)
+	}
 	fmt.Println("prob:", vpath.Probability)
 	fmt.Println("path:")
 	for i := range vpath.Path {
 		fmt.Println("\t", vpath.Path[i])
 	}
 
-	if vpath.Probability != -1932.2344194557202 {
+	if vpath.Probability != -1941.5275666547193 {
 		t.Error(
-			"probability has to be -1932.2344194557202, but got", vpath.Probability,
+			"probability has to be -1941.5275666547193, but got", vpath.Probability,
 		)
 	}
 	if len(vpath.Path) != 4 {
